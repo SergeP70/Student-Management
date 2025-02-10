@@ -1,25 +1,39 @@
 import sys
 import sqlite3
 from PyQt6.QtGui import QAction
+from PyQt6.QtCore import Qt
 from PyQt6.QtWidgets import QApplication, QLabel, QWidget, QGridLayout, QLineEdit, QPushButton, QComboBox, QMainWindow, \
-    QTableWidget, QTableWidgetItem, QDialog, QVBoxLayout
+    QTableWidget, QTableWidgetItem, QDialog, QVBoxLayout, QMessageBox, QToolBar
 
 
 class MainWindow(QMainWindow):
     def __init__(self):
         super().__init__()
         self.setWindowTitle("Student Management System")
+        self.setFixedWidth(600)
+        self.setFixedHeight(600)
 
         mnu_file = self.menuBar().addMenu("&File")
-        mnu_help = self.menuBar().addMenu("&Help")
-
         action_add_student = QAction('Add Student', self)
         action_add_student.triggered.connect(self.insert)
         mnu_file.addAction(action_add_student)
 
+        mnu_edit = self.menuBar().addMenu("&Edit")
+        action_search_student = QAction('Search', self)
+        action_search_student.triggered.connect(self.search)
+        mnu_edit.addAction(action_search_student)
+
+        mnu_help = self.menuBar().addMenu("&Help")
         about_action = QAction('About', self)
         mnu_help.addAction(about_action)
         about_action.setMenuRole(QAction.MenuRole.NoRole)
+
+        toolbar = QToolBar()
+        toolbar.setMovable(True)
+        self.addToolBar(toolbar)
+        toolbar.addAction(action_add_student)
+        toolbar.addAction(action_search_student)
+
 
         self.tblStudents = QTableWidget()
         self.tblStudents.setColumnCount(4)
@@ -40,6 +54,10 @@ class MainWindow(QMainWindow):
 
     def insert(self):
         dialog = InsertDialog()
+        dialog.exec()
+
+    def search(self):
+        dialog = SearchDialog()
         dialog.exec()
 
 
@@ -82,6 +100,36 @@ class InsertDialog(QDialog):
         cursor.close()
         connection.close()
         main_window.load_data()
+
+class SearchDialog(QDialog):
+    def __init__(self):
+        super().__init__()
+        self.setWindowTitle('Search a student')
+        self.setFixedWidth(300)
+        self.setFixedHeight(300)
+
+        layout = QVBoxLayout()
+        self.txtName = QLineEdit()
+        self.txtName.setPlaceholderText('Name')
+        layout.addWidget(self.txtName)
+
+        self.btnSearch = QPushButton('Search')
+        self.btnSearch.clicked.connect(self.search)
+        layout.addWidget(self.btnSearch)
+
+        self.setLayout(layout)
+
+    def search(self):
+        main_window.tblStudents.setCurrentItem(None)
+        lookup = self.txtName.text()
+        matching_items = main_window.tblStudents.findItems(lookup, Qt.MatchFlag.MatchContains)
+        if matching_items:
+            for item in matching_items:
+                item.setSelected(True)
+        else:
+            msg = QMessageBox.warning(self, 'Information', 'Data was not found',
+                                      defaultButton=QMessageBox.StandardButton.Ok)
+            msg.exec()
 
 
 
