@@ -6,6 +6,15 @@ from PyQt6.QtWidgets import QApplication, QLabel, QWidget, QGridLayout, QLineEdi
     QTableWidget, QTableWidgetItem, QDialog, QVBoxLayout, QMessageBox, QToolBar, QStatusBar
 
 
+class DatabaseConnection:
+    def __init__(self, database = 'database.db'):
+        self.database = database
+
+    def connect(self):
+        connection = sqlite3.connect(self.database)
+        return connection
+
+
 class MainWindow(QMainWindow):
     def __init__(self):
         super().__init__()
@@ -62,16 +71,14 @@ class MainWindow(QMainWindow):
         self.statusbar.addWidget(btnEdit)
         self.statusbar.addWidget(btnDelete)
 
-
     def load_data(self):
-        connection = sqlite3.connect('database.db')
+        connection = DatabaseConnection().connect()
         content = connection.execute("SELECT * FROM students")
         self.tblStudents.setRowCount(0)
         for row_id, row_data in enumerate(content):
             self.tblStudents.insertRow(row_id)
             for col_id, data in enumerate(row_data):
                 self.tblStudents.setItem(row_id, col_id, QTableWidgetItem(str(data)))
-
         connection.close()
 
     def insert(self):
@@ -141,7 +148,7 @@ class InsertDialog(QDialog):
         name = self.txtName.text()
         course = self.cboCourse.currentText()
         mobile = self.txtMobile.text()
-        connection = sqlite3.connect('database.db')
+        connection = DatabaseConnection().connect()
         cursor = connection.cursor()
         cursor.execute('INSERT INTO students (name, course, mobile) VALUES (?, ?, ?)',
                        (name, course, mobile))
@@ -153,6 +160,7 @@ class InsertDialog(QDialog):
 
     def closing(self):
         self.accept()
+
 
 class SearchDialog(QDialog):
     def __init__(self):
@@ -186,6 +194,7 @@ class SearchDialog(QDialog):
             msg.setWindowTitle('Warning')
             msg.setStandardButtons(QMessageBox.StandardButton.Ok)
             button = msg.exec()
+
 
 class EditDialog(QDialog):
     def __init__(self):
@@ -227,7 +236,7 @@ class EditDialog(QDialog):
         self.setLayout(layout)
 
     def update_student(self):
-        connection = sqlite3.connect('database.db')
+        connection = DatabaseConnection().connect()
         cursor = connection.cursor()
         print(self.txtMobile.text())
         cursor.execute("UPDATE students SET name = ?, course = ?, mobile = ? WHERE id = ?",
@@ -262,7 +271,7 @@ class DeleteDialog(QDialog):
         index = main_window.tblStudents.currentRow()
         student_id = main_window.tblStudents.item(index, 0).text()
 
-        connection = sqlite3.connect('database.db')
+        connection = DatabaseConnection().connect()
         cursor = connection.cursor()
         cursor.execute("DELETE FROM students WHERE id = ?", (student_id, ))
         connection.commit()
